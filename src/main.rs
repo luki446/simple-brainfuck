@@ -3,6 +3,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::env;
+use std::io::Read;
 
 enum Token
 {
@@ -51,7 +52,7 @@ fn main() {
                 _ => continue,
             }
         }
-        
+
         ite = 0;
 
         while !done
@@ -59,7 +60,7 @@ fn main() {
             let i = &tokens[ite];
             match i
             {
-                Token::Leftarrow => 
+                Token::Leftarrow =>
                 {
                     if pointer > 0
                     {
@@ -70,12 +71,13 @@ fn main() {
                 Token::Plus => memo[pointer] += 1,
                 Token::Minus => memo[pointer] -= 1,
                 Token::Dot => print!("{}", memo[pointer] as char),
-                Token::Comma => 
+                Token::Comma =>
                 {
-                    let j: u8 = read!();
-                    memo[pointer] = j; 
+                    let mut foo: [u8; 1] = [0; 1];
+                    std::io::stdin().read_exact(&mut foo).expect("Cannot read from console");
+                    memo[pointer] = foo[0];
                 },
-                Token::Leftbracket => 
+                Token::Leftbracket =>
                 {
                     if memo[pointer] == 0
                     {
@@ -83,7 +85,7 @@ fn main() {
                         loop {
                             match tokens[muv]
                             {
-                                Token::Rightbracket => 
+                                Token::Rightbracket =>
                                 {
                                     ite = muv;
                                     break;
@@ -104,7 +106,7 @@ fn main() {
                         loop {
                             match tokens[muv]
                             {
-                                Token::Leftbracket => 
+                                Token::Leftbracket =>
                                 {
                                     ite = muv;
                                     break;
@@ -113,12 +115,12 @@ fn main() {
                                     muv -= 1;
                                 },
                             }
-                        }   
+                        }
                     }
                 },
             }
             ite += 1;
-            if ite == tokens.len() - 1
+            if ite == tokens.len()
             {
                 done = true;
             }
