@@ -1,10 +1,8 @@
-#[macro_use] extern crate text_io;
-
 use std::fs::File;
-use std::io::prelude::*;
 use std::env;
 use std::io::Read;
 
+#[derive(PartialEq)]
 enum Token
 {
     Leftarrow,
@@ -13,8 +11,8 @@ enum Token
     Minus,
     Dot,
     Comma,
-    Leftbracket,
-    Rightbracket
+    Leftbracket(Option<usize>),
+    Rightbracket(Option<usize>)
 }
 
 fn main() {
@@ -26,34 +24,59 @@ fn main() {
     }
     else
     {
-        let mut file = File::open(&args[1]).expect("Can't open file");
         let mut contest: String = String::new();
-        file.read_to_string(&mut contest).expect("Cannot read file to string");
+        
+        {
+            let mut file = File::open(&args[1]).expect("Can't open file");
+            file.read_to_string(&mut contest).expect("Cannot read file to string");
+        }
 
         let mut memo: [u8; 1024] = [0; 1024];
         let mut pointer = 0;
 
         let mut done: bool = false;
-        let mut ite: usize;
+        let mut ite: usize= 0;
 
         let mut tokens = Vec::new();
-        for c in contest.chars()
         {
-            match c
+            let mut adresses: Vec<usize> = Vec::new();
+            for (i, c) in contest.chars().enumerate()
             {
-                '<' => tokens.push(Token::Leftarrow),
-                '>' => tokens.push(Token::Rightarrow),
-                '+' => tokens.push(Token::Plus),
-                '-' => tokens.push(Token::Minus),
-                '.' => tokens.push(Token::Dot),
-                ',' => tokens.push(Token::Comma),
-                '[' => tokens.push(Token::Leftbracket),
-                ']' => tokens.push(Token::Rightbracket),
-                _ => continue,
+                match c
+                {
+                    '<' => tokens.push(Token::Leftarrow),
+                    '>' => tokens.push(Token::Rightarrow),
+                    '+' => tokens.push(Token::Plus),
+                    '-' => tokens.push(Token::Minus),
+                    '.' => tokens.push(Token::Dot),
+                    ',' => tokens.push(Token::Comma),
+                    '[' => 
+                    {
+                        adresses.push(i);
+                        tokens.push(Token::Leftbracket(None));
+                    },
+                    ']' => {
+                        match adresses.pop()
+                        {
+                            Some(x) => 
+                            {
+                                tokens[x] = Token::Leftbracket(Some(i));
+                                tokens.push(Token::Rightbracket(Some(x)))
+                            },
+                            None =>
+                            {
+                                panic!("Missing opening bracket");
+                            }
+                        }
+                    },
+                    _ => continue,
+                }
+            }
+            if !adresses.is_empty()
+            {
+                panic!("Something is fucked up with brackets, too much openings");
             }
         }
-
-        ite = 0;
 
         while !done
         {
@@ -68,8 +91,22 @@ fn main() {
                     }
                 },
                 Token::Rightarrow => pointer += 1,
-                Token::Plus => memo[pointer] += 1,
-                Token::Minus => memo[pointer] -= 1,
+                Token::Plus =>
+                    {
+                        match memo[pointer].checked_add(1)
+                            {
+                                Some(x) => memo[pointer] = x,
+                                None => memo[pointer] = u8::min_value(),
+                            }
+                    },
+                Token::Minus =>
+                    {
+                        match memo[pointer].checked_sub(1)
+                            {
+                                Some(x) => memo[pointer] = x,
+                                None => memo[pointer] = u8::max_value(),
+                            }
+                    },
                 Token::Dot => print!("{}", memo[pointer] as char),
                 Token::Comma =>
                 {
@@ -77,44 +114,23 @@ fn main() {
                     std::io::stdin().read_exact(&mut foo).expect("Cannot read from console");
                     memo[pointer] = foo[0];
                 },
-                Token::Leftbracket =>
+                Token::Leftbracket(x) =>
                 {
                     if memo[pointer] == 0
                     {
-                        let mut muv = ite;
-                        loop {
-                            match tokens[muv]
-                            {
-                                Token::Rightbracket =>
-                                {
-                                    ite = muv;
-                                    break;
-                                },
-                                _ => {
-                                    muv += 1;
-                                },
-                            }
+                        match x {
+                            Some(a) => ite = *a,
+                            None => panic!("Brackets error"),
                         }
-
                     }
                 },
-                Token::Rightbracket =>
+                Token::Rightbracket(x) =>
                 {
                     if memo[pointer] != 0
                     {
-                        let mut muv = ite;
-                        loop {
-                            match tokens[muv]
-                            {
-                                Token::Leftbracket =>
-                                {
-                                    ite = muv;
-                                    break;
-                                },
-                                _ => {
-                                    muv -= 1;
-                                },
-                            }
+                        match x {
+                            Some(a) => ite = *a,
+                            None => panic!("Brackets error"),
                         }
                     }
                 },

@@ -1,6 +1,6 @@
 [package]
 name = "simple-brainfuck"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Luki446 <luki446@gmail.com>"]
 
 [dependencies]
